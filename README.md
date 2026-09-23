@@ -1,4 +1,4 @@
-# gif2mochi web
+# gif2cpp web
 
 A React app that converts GIFs into compressed C++ animation headers for 128×64
 SSD1306 OLED displays. It is a browser port of `reference/gif2mochi.py`. With
