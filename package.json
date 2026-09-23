@@ -1,0 +1,24 @@
+{
+  "name": "gif2mochi-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "parity": "node scripts/parity.mjs",
+    "colors": "node scripts/colors.mjs",
+    "detail": "node scripts/detail.mjs"
+  },
+  "dependencies": {
+    "gifuct-js": "^2.1.2",
+    "jszip": "^3.10.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "vite": "^8.3.0"
+  }
+}
