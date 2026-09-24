@@ -82,3 +82,14 @@ bytes because the offset table is `uint16_t`.
 - `src/worker.js`: runs decoding and encoding off the main thread
 - `src/lib/sketch.js`: the example Arduino sketch and README that go in the ZIP
 - `src/components/`: the UI
+
+
+
+
+https://github.com/user-attachments/assets/4ff33ff1-8c29-4c99-af39-95c2e9a2d94a
+
+
+
+
+
+
