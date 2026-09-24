@@ -330,21 +330,27 @@ export default function App() {
       </nav>
 
       <main className="work">
-        <Stage
-          entry={selectedEntry}
-          panel={panel}
-          setPanel={setPanel}
-          onFrameMs={(ms) => selectedEntry && patch(selectedEntry.key, { frameMs: ms, frameMsTouched: true })}
-          onFraming={(box) => updateSettings({ manualBox: box }, box ? 30 : 0)}
-        />
-        <Settings
-          entry={selectedEntry}
-          update={(p) => selectedEntry && patch(selectedEntry.key, p)}
-          updateSettings={updateSettings}
-          taken={taken}
-          onRemove={() => selectedEntry && remove(selectedEntry.key)}
-        />
-        <CodePanel key={selected || 'none'} files={files} />
+        {/* On wide screens the viewer and the inspector scroll on their own,
+            so the preview stays put while you work through the settings. */}
+        <div className="viewer">
+          <Stage
+            entry={selectedEntry}
+            panel={panel}
+            setPanel={setPanel}
+            onFrameMs={(ms) => selectedEntry && patch(selectedEntry.key, { frameMs: ms, frameMsTouched: true })}
+            onFraming={(box) => updateSettings({ manualBox: box }, box ? 30 : 0)}
+          />
+          <CodePanel key={selected || 'none'} files={files} />
+        </div>
+        <div className="inspector">
+          <Settings
+            entry={selectedEntry}
+            update={(p) => selectedEntry && patch(selectedEntry.key, p)}
+            updateSettings={updateSettings}
+            taken={taken}
+            onRemove={() => selectedEntry && remove(selectedEntry.key)}
+          />
+        </div>
       </main>
 
       {dragging && (
