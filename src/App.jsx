@@ -8,6 +8,7 @@ import { Stage } from './components/Stage.jsx';
 import { Settings } from './components/Settings.jsx';
 import { Budget, Library } from './components/Library.jsx';
 import { CodePanel } from './components/CodePanel.jsx';
+import { ThemeSwitch } from './components/ThemeSwitch.jsx';
 
 let nextId = 1;
 const uid = () => `e${nextId++}`;
@@ -287,6 +288,7 @@ export default function App() {
           <button type="button" className="btn primary" disabled={!exportable} onClick={downloadZip}>
             Download all files (.zip)
           </button>
+          <ThemeSwitch />
         </div>
       </header>
 
