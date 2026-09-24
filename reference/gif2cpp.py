@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-gif2mochi.py  (v2)  -  convert GIFs into Mochi Desk animation headers.
+gif2cpp.py  (v2)  -  convert GIFs into Mochi Desk animation headers.
 
 Put your .gif files next to this script and just run it. It finds them, asks
 which to convert, encodes it, and registers it in animations.h for you.
 
-    python3 gif2mochi.py                      interactive, pick from a menu
-    python3 gif2mochi.py sad.gif              convert one file
-    python3 gif2mochi.py sad.gif --preview    write a PNG first, do not encode
-    python3 gif2mochi.py --all                convert every GIF in the folder
-    python3 gif2mochi.py --list               show what is registered now
-    python3 gif2mochi.py --remove sad         unregister and delete a header
-    python3 gif2mochi.py --budget             flash usage of all animations
+    python3 gif2cpp.py                      interactive, pick from a menu
+    python3 gif2cpp.py sad.gif              convert one file
+    python3 gif2cpp.py sad.gif --preview    write a PNG first, do not encode
+    python3 gif2cpp.py --all                convert every GIF in the folder
+    python3 gif2cpp.py --list               show what is registered now
+    python3 gif2cpp.py --remove sad         unregister and delete a header
+    python3 gif2cpp.py --budget             flash usage of all animations
 
 Tuning:
     --threshold 130      raise if the result is too white, lower if too dark
@@ -224,7 +224,7 @@ ROW_RE = re.compile(r'\{\s*"([^"]*)"\s*,\s*(\w+)_data\s*,\s*\2_offsets\s*,\s*\w+
 
 HEADER_TOP = """// Auto-generated index of all Mochi animations.
 // Each frame is XOR-delta encoded against the previous frame, then PackBits
-// compressed. Maintained by tools/gif2mochi.py.
+// compressed. Maintained by tools/gif2cpp.py.
 #pragma once
 #include <Arduino.h>
 
@@ -366,7 +366,7 @@ def interactive(a, outdir, animh):
     cands = sorted(set(c for c in cands if not os.path.basename(c).startswith("preview_")))
     if not cands:
         print("No GIFs found here. Put your .gif files next to this script, or pass a path:")
-        print("    python3 gif2mochi.py path/to/clip.gif")
+        print("    python3 gif2cpp.py path/to/clip.gif")
         return
 
     print("\nGIFs found:")

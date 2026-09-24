@@ -53,7 +53,7 @@ function entryStatus(entry) {
 }
 
 export function Stage({ entry, panel, setPanel, onFrameMs, onFraming, dragging }) {
-  const idle = useMemo(() => textBits([['gif2mochi', 17], ['drop a GIF', 11]]), []);
+  const idle = useMemo(() => textBits([['gif2cpp', 17], ['drop a GIF', 11]]), []);
   const dropHere = useMemo(() => textBits([['let go', 19], ['to convert it', 11]]), []);
   // an over-limit result still has frames worth previewing
   const result = entry?.result;

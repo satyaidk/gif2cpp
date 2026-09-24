@@ -92,7 +92,7 @@ export function readme(entries, folder, withSketch, b) {
   const cli = entries.filter((e) => e.cli).map((e) => `    ${e.cli}`).join('\n');
   return `# ${folder}
 
-Made with gif2mochi web. Same format as tools/gif2mochi.py; clips framed with Show all are byte-for-byte identical to its output.
+Made with gif2cpp web. Same format as tools/gif2cpp.py; clips framed with Show all are byte-for-byte identical to its output.
 
 | File | Name | Frames | Stored |
 | --- | --- | ---: | ---: |

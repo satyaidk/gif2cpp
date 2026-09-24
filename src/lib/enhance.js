@@ -1,4 +1,4 @@
-// Extra steps that are not in gif2mochi.py: colour handling, contrast,
+// Extra steps that are not in gif2cpp.py: colour handling, contrast,
 // sharpening, automatic threshold, dithering, outlines and cleanup.
 //
 // Why colour needs its own step: the script turns colour into brightness
