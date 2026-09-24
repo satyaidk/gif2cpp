@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { effectiveLabel } from '../lib/mochi.js';
 import { drawBits } from './Oled.jsx';
 
@@ -9,7 +9,17 @@ function Thumb({ entry, panel }) {
     if (r?.bits) drawBits(ref.current, r.bits, Math.floor(r.nFrames / 2), panel);
     else drawBits(ref.current, null, 0, panel);
   }, [r, panel]);
-  return <canvas ref={ref} width={128} height={64} className="thumb" aria-hidden="true" />;
+  const working = entry.status === 'loading' || entry.busy || (!r && entry.status !== 'error' && entry.kind === 'clip');
+  return (
+    <span className={`thumb-wrap ${working ? 'working' : ''}`} aria-hidden="true">
+      <canvas ref={ref} width={128} height={64} className="thumb" />
+      {working && (
+        <span className={`thumb-progress ${entry.progress ? '' : 'indeterminate'}`}>
+          <i style={entry.progress ? { width: `${Math.round(entry.progress * 100)}%` } : undefined} />
+        </span>
+      )}
+    </span>
+  );
 }
 
 function status(e) {
@@ -22,7 +32,12 @@ function status(e) {
   return { text: `${e.result.nFrames} frames, ${(e.result.blob.length / 1024).toFixed(1)} KB`, tone: '' };
 }
 
-export function Library({ entries, selected, onSelect, onMove, onRemove, panel, indexOf }) {
+export function Library({ entries, selected, onSelect, onMove, onReorder, onRemove, panel, indexOf }) {
+  // Drag a row to reorder; the up and down buttons do the same from the keyboard.
+  const [dragKey, setDragKey] = useState(null);
+  const [dropAt, setDropAt] = useState(null);
+  const endDrag = () => { setDragKey(null); setDropAt(null); };
+
   if (!entries.length) {
     return <p className="library-empty">Converted animations appear here, in the order they get in <code>ANIMS[]</code>.</p>;
   }
@@ -31,8 +46,37 @@ export function Library({ entries, selected, onSelect, onMove, onRemove, panel, 
       {entries.map((e, i) => {
         const st = status(e);
         const idx = indexOf(e);
+        const cls = [
+          e.key === selected && 'selected',
+          e.key === dragKey && 'dragged',
+          dragKey && dropAt === i && 'drop-before',
+          dragKey && dropAt === i + 1 && i === entries.length - 1 && 'drop-after',
+        ].filter(Boolean).join(' ');
         return (
-          <li key={e.key} className={e.key === selected ? 'selected' : ''}>
+          <li
+            key={e.key}
+            className={cls}
+            draggable={entries.length > 1}
+            title={entries.length > 1 ? 'Drag to change the order' : undefined}
+            onDragStart={(ev) => {
+              ev.dataTransfer.effectAllowed = 'move';
+              ev.dataTransfer.setData('text/plain', e.sym);
+              setDragKey(e.key);
+            }}
+            onDragOver={(ev) => {
+              if (!dragKey) return;
+              ev.preventDefault();
+              const r = ev.currentTarget.getBoundingClientRect();
+              setDropAt(ev.clientY < r.top + r.height / 2 ? i : i + 1);
+            }}
+            onDrop={(ev) => {
+              if (!dragKey) return;
+              ev.preventDefault();
+              if (dropAt != null) onReorder(dragKey, dropAt);
+              endDrag();
+            }}
+            onDragEnd={endDrag}
+          >
             <button type="button" className="entry" onClick={() => onSelect(e.key)} aria-current={e.key === selected}>
               <Thumb entry={e} panel={panel} />
               <span className="entry-text">

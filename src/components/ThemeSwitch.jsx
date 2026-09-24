@@ -85,7 +85,6 @@ export function ThemeSwitch() {
       </button>
       {open && (
         <div className="theme-menu" role="menu" aria-label="Theme" onKeyDown={onMenuKey}>
-          <p className="theme-menu-title" aria-hidden="true">Theme</p>
           {MODES.map(([value, name, help], i) => (
             <button
               key={value}

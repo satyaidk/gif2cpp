@@ -42,16 +42,45 @@ function usePlayback(nFrames, frameMs, resetKey) {
   return { frame: Math.min(frame, Math.max(0, nFrames - 1)), setFrame, playing, setPlaying };
 }
 
-export function Stage({ entry, panel, setPanel, onFrameMs, onFraming }) {
+/** Typing in a field or using a control should never trigger a shortcut. */
+export const isTyping = (el) => !!el?.closest?.('input, textarea, select, [contenteditable="true"], [role="application"], dialog');
+
+function entryStatus(entry) {
+  if (!entry) return 'idle';
+  if (entry.status === 'error' || entry.result?.error) return 'bad';
+  if (entry.status === 'loading' || entry.busy || !entry.result) return 'busy';
+  return 'ok';
+}
+
+export function Stage({ entry, panel, setPanel, onFrameMs, onFraming, dragging }) {
   const idle = useMemo(() => textBits([['gif2mochi', 17], ['drop a GIF', 11]]), []);
+  const dropHere = useMemo(() => textBits([['let go', 19], ['to convert it', 11]]), []);
   // an over-limit result still has frames worth previewing
   const result = entry?.result;
   const nFrames = result?.nFrames || 0;
   const { frame, setFrame, playing, setPlaying } = usePlayback(nFrames, entry?.frameMs, entry?.key);
-  const bits = result?.bits || (entry ? null : idle);
+  const bits = dragging ? dropHere : result?.bits || (entry ? null : idle);
 
   const [paused, setPausedFrame] = useState(0);
   useEffect(() => { if (!playing) setPausedFrame(frame); }, [playing, frame]);
+
+  // Space plays or pauses, the arrow keys step through frames.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || nFrames < 2) return;
+      if (e.key === ' ' && !e.target.closest?.('button, a')) {
+        e.preventDefault();
+        setPlaying((p) => !p);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        setPlaying(false);
+        const step = (e.key === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 10 : 1);
+        setFrame((f) => (f + step + nFrames) % nFrames);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [nFrames, setFrame, setPlaying]);
 
   // Framing: the manual box if there is one, otherwise the automatic one
   const editable = entry?.kind === 'clip' && result && entry.source;
@@ -76,7 +105,7 @@ export function Stage({ entry, panel, setPanel, onFrameMs, onFraming }) {
 
   return (
     <section className="stage" aria-label="Preview">
-      <Oled bits={bits} frame={bits === idle ? 0 : frame} panel={panel} pan={pan} />
+      <Oled bits={bits} frame={bits === idle || bits === dropHere ? 0 : frame} panel={panel} pan={pan} status={entryStatus(entry)} />
 
       <div className="transport">
         <button
@@ -85,6 +114,7 @@ export function Stage({ entry, panel, setPanel, onFrameMs, onFraming }) {
           onClick={() => setPlaying((p) => !p)}
           disabled={nFrames < 2}
           aria-label={playing ? 'Pause' : 'Play'}
+          title={playing ? 'Pause (Space)' : 'Play (Space)'}
         >
           {playing ? (
             <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" /><rect x="9.5" y="2" width="3.5" height="12" /></svg>
@@ -98,6 +128,7 @@ export function Stage({ entry, panel, setPanel, onFrameMs, onFraming }) {
           min={0}
           max={Math.max(0, nFrames - 1)}
           value={frame}
+          style={{ '--fill': `${nFrames > 1 ? (frame / (nFrames - 1)) * 100 : 0}%` }}
           disabled={nFrames < 2}
           onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }}
           aria-label="Frame"
@@ -142,7 +173,7 @@ export function Stage({ entry, panel, setPanel, onFrameMs, onFraming }) {
         />
       )}
       {entry?.kind === 'clip' && result && playing && (
-        <p className="hint">Pause to see the source frame that matches the display.</p>
+        <p className="hint">Pause to see the source frame that matches the display. Use <kbd>←</kbd> <kbd>→</kbd> to step through frames.</p>
       )}
     </section>
   );
