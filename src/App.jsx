@@ -13,6 +13,7 @@ import { Guide } from './components/Guide.jsx';
 import { Toasts, useToasts } from './components/Toasts.jsx';
 import { isTyping } from './components/Stage.jsx';
 import { sampleFrames } from './lib/sample.js';
+import { randomZipName } from './lib/zipNames.js';
 
 let nextId = 1;
 const uid = () => `e${nextId++}`;
@@ -255,7 +256,7 @@ export default function App() {
 
   const downloadZip = async () => {
     if (!rows.length) return;
-    const name = withSketch ? 'MochiPlayer.zip' : 'mochi_animations.zip';
+    const name = randomZipName();
     try {
       saveBlob(await buildZip(entries, { withSketch }), name);
       toast(withSketch
