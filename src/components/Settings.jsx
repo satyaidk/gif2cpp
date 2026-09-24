@@ -7,7 +7,7 @@ import { CopyButton } from './CopyButton.jsx';
 
 const COLORS = [
   ['smart', 'All colours', 'Every colour that differs from the background lights up, including red and blue.'],
-  ['luma', 'Brightness', 'Only bright colours light up; red and blue come out dark. This is what gif2mochi.py does.'],
+  ['luma', 'Brightness', 'Only bright colours light up; red and blue come out dark. This is what gif2cpp.py does.'],
 ];
 const STYLES = [
   ['solid', 'Solid', 'Clean shapes. Best for cartoons, icons and faces.'],
@@ -64,7 +64,7 @@ function Presets({ s, onPick }) {
 }
 
 // Which sections are open is remembered between visits.
-const OPEN_KEY = 'gif2mochi-sections';
+const OPEN_KEY = 'gif2cpp-sections';
 function readOpen() {
   try {
     return JSON.parse(localStorage.getItem(OPEN_KEY)) || {};
@@ -406,7 +406,7 @@ export function Settings({ entry, update, updateSettings, taken, onRemove }) {
           <div className="cli">
             {pyOk ? (
               <>
-                <p className="help">These settings give the same file with gif2mochi.py:</p>
+                <p className="help">These settings give the same file with gif2cpp.py:</p>
                 <div className="cli-row">
                   <code>{cli}</code>
                   <CopyButton text={cli} />
@@ -414,7 +414,7 @@ export function Settings({ entry, update, updateSettings, taken, onRemove }) {
               </>
             ) : (
               <>
-                <p className="help">The colour, cleanup and fit tools are not in gif2mochi.py. To get output it can reproduce, switch back to its behaviour.</p>
+                <p className="help">The colour, cleanup and fit tools are not in gif2cpp.py. To get output it can reproduce, switch back to its behaviour.</p>
                 <button type="button" className="btn small" onClick={() => updateSettings({
                   ...PYTHON_SETTINGS,
                   denoise: s.denoise === 'off' ? 'off' : 'light',

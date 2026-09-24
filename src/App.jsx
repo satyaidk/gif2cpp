@@ -331,7 +331,7 @@ export default function App() {
     <div className={`app ${dragging ? 'dragging' : ''}`}>
       <header className="top">
         <div className="brand">
-          <h1>gif2mochi</h1>
+          <h1>gif2cpp</h1>
           <p>Turn GIFs into animation headers for 128×64 OLED displays.</p>
         </div>
         <div className="export">

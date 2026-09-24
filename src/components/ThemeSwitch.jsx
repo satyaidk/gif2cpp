@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 // index.html reads the same key before first paint, so there is no flash.
-const KEY = 'gif2mochi-theme';
+const KEY = 'gif2cpp-theme';
 const ICONS = {
   light: <path d="M8 4.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM8 0v2.5M8 13.5V16M0 8h2.5M13.5 8H16M2.3 2.3l1.8 1.8M11.9 11.9l1.8 1.8M2.3 13.7l1.8-1.8M11.9 4.1l1.8-1.8" />,
   dark: <path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7z" />,

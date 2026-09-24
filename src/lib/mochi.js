@@ -1,4 +1,4 @@
-// Core of gif2mochi, ported from tools/gif2mochi.py.
+// Core of gif2cpp, ported from tools/gif2cpp.py.
 //
 // Every step reproduces what the Python/Pillow version does, so a GIF
 // converted here produces the same anim_<sym>.h byte for byte:
@@ -38,13 +38,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
   manualBox: null, // [x0, y0, x1, y1] in source pixels when framed by hand, else null
 });
 
-/** Exactly what gif2mochi.py does. Threshold, invert, frame limit and crop stay as they are. */
+/** Exactly what gif2cpp.py does. Threshold, invert, frame limit and crop stay as they are. */
 export const PYTHON_SETTINGS = Object.freeze({
   colors: 'luma', fit: 'python', style: 'solid', levels: false, deblur: 0, detail: 0, specks: false, steady: false,
   manualBox: null,
 });
 
-/** True when gif2mochi.py can produce the same output from these settings. */
+/** True when gif2cpp.py can produce the same output from these settings. */
 export function pythonCompatible(s, hasAlpha) {
   return s.colors === 'luma' && s.fit === 'python' && s.style === 'solid' && !s.levels && !s.deblur && !s.detail
     && !s.specks && !s.steady && (s.denoise === 'light' || s.denoise === 'off') && !s.manualBox
@@ -355,7 +355,7 @@ export function stretchBox(subject, w, h) {
  * The crop box for a clip.
  *   fill    - no black bars; crops what does not fit (default)
  *   stretch - whole subject, distorted to 2:1
- *   python  - exactly what gif2mochi.py does (padded box, black bars)
+ *   python  - exactly what gif2cpp.py does (padded box, black bars)
  */
 export function boxFor(subject, w, h, fit, autocrop) {
   const s = autocrop ? subject : null;
@@ -542,7 +542,7 @@ export function headerText(sym, label, blob, offsets, nframes) {
 
 const REGISTRY_TOP = `// Auto-generated index of all Mochi animations.
 // Each frame is XOR-delta encoded against the previous frame, then PackBits
-// compressed. Maintained by tools/gif2mochi.py.
+// compressed. Maintained by tools/gif2cpp.py.
 #pragma once
 #include <Arduino.h>
 
@@ -604,7 +604,7 @@ export function parseHeader(text) {
 }
 
 // =============================================================== reporting
-/** Same numbers as `gif2mochi.py --budget`. */
+/** Same numbers as `gif2cpp.py --budget`. */
 export function budget(entries) {
   const totalBytes = entries.reduce((s, e) => s + e.bytes, 0);
   const totalFrames = entries.reduce((s, e) => s + e.frames, 0);
@@ -616,7 +616,7 @@ export function budget(entries) {
 /** The command that reproduces these settings with the original script. */
 export function cliCommand(fileName, sym, label, s) {
   const q = (v) => (/[\s"']/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v);
-  const parts = ['python3 gif2mochi.py', q(fileName), sym, q(label)];
+  const parts = ['python3 gif2cpp.py', q(fileName), sym, q(label)];
   if (s.threshold !== 110) parts.push(`--threshold ${s.threshold}`);
   if (s.invert) parts.push('--invert');
   if (s.maxFrames) parts.push(`--max-frames ${s.maxFrames}`);

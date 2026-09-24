@@ -1,4 +1,4 @@
-// Checks that the web port writes the same files as reference/gif2mochi.py.
+// Checks that the web port writes the same files as reference/gif2cpp.py.
 // Needs Python 3 with Pillow on PATH as `python`.  Run: npm run parity
 
 import { execFileSync } from 'node:child_process';
@@ -33,7 +33,7 @@ let failures = 0;
 const rows = [];
 
 for (const c of CASES) {
-  const pyArgs = [join(root, 'reference', 'gif2mochi.py'), join(gifs, c.file), c.sym];
+  const pyArgs = [join(root, 'reference', 'gif2cpp.py'), join(gifs, c.file), c.sym];
   if (c.label) pyArgs.push(c.label);
   execFileSync(python, [...pyArgs, '--outdir', pyOut, ...c.args], { stdio: 'pipe' });
   const expected = norm(readFileSync(join(pyOut, `anim_${c.sym}.h`), 'utf8'));
