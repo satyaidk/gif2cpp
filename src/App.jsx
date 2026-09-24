@@ -8,6 +8,12 @@ import { Stage } from './components/Stage.jsx';
 import { Settings } from './components/Settings.jsx';
 import { Budget, Library } from './components/Library.jsx';
 import { CodePanel } from './components/CodePanel.jsx';
+import { ThemeSwitch } from './components/ThemeSwitch.jsx';
+import { Guide } from './components/Guide.jsx';
+import { Toasts, useToasts } from './components/Toasts.jsx';
+import { isTyping } from './components/Stage.jsx';
+import { sampleFrames } from './lib/sample.js';
+import { randomZipName } from './lib/zipNames.js';
 
 let nextId = 1;
 const uid = () => `e${nextId++}`;
@@ -37,6 +43,8 @@ export default function App() {
   const [withSketch, setWithSketch] = useState(true);
   const [notice, setNotice] = useState(null);
   const [dragging, setDragging] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const { toasts, toast, dismiss } = useToasts();
   const entriesRef = useRef(entries);
   entriesRef.current = entries;
   const timers = useRef(new Map());
@@ -204,6 +212,15 @@ export default function App() {
     return next;
   });
 
+  /** Moves an animation to position `to` (counted before it is taken out). */
+  const reorder = (key, to) => setEntries((list) => {
+    const from = list.findIndex((e) => e.key === key);
+    if (from < 0 || to === from || to === from + 1) return list;
+    const next = list.filter((e) => e.key !== key);
+    next.splice(to > from ? to - 1 : to, 0, list[from]);
+    return next;
+  });
+
   const taken = (sym) => entries.some((e) => e.key !== selected && same(e.sym, sym));
 
   // ------------------------------------------------------------ output
@@ -238,9 +255,47 @@ export default function App() {
   }, [selectedEntry, rows, entries, exportable]);
 
   const downloadZip = async () => {
-    const blob = await buildZip(entries, { withSketch });
-    saveBlob(blob, withSketch ? 'MochiPlayer.zip' : 'mochi_animations.zip');
+    if (!rows.length) return;
+    const name = randomZipName();
+    try {
+      saveBlob(await buildZip(entries, { withSketch }), name);
+      toast(withSketch
+        ? `Downloaded ${name}. Unzip it and open MochiPlayer.ino in the Arduino IDE.`
+        : `Downloaded ${name}. Copy the headers into your sketch folder.`);
+    } catch (err) {
+      toast(`Could not build ${name}: ${err.message}`, 'bad');
+    }
   };
+
+  const addSample = async () => addClip(await sampleFrames(), 'mochi', true);
+
+  // ------------------------------------------------------------ keyboard
+  const shortcuts = useRef(null);
+  shortcuts.current = { downloadZip, entries, selected };
+  useEffect(() => {
+    const onKey = (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      const { downloadZip: save, entries: list, selected: sel } = shortcuts.current;
+      if (mod && !e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        save();
+      } else if (mod && !e.altKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        gifInput.current?.click();
+      } else if (!mod && !e.altKey && !isTyping(e.target)) {
+        if (e.key === '?') {
+          e.preventDefault();
+          setGuideOpen(true);
+        } else if ((e.key === '[' || e.key === ']') && list.length) {
+          const i = list.findIndex((x) => x.key === sel);
+          const j = Math.min(list.length - 1, Math.max(0, i + (e.key === ']' ? 1 : -1)));
+          setSelected(list[j].key);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // ------------------------------------------------------------ page-wide drop
   useEffect(() => {
@@ -280,13 +335,20 @@ export default function App() {
           <p>Turn GIFs into animation headers for 128×64 OLED displays.</p>
         </div>
         <div className="export">
+          <button type="button" className="btn ghost guide-button" onClick={() => setGuideOpen(true)} title="Guide (?)">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" /><path d="M6.2 6.2a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4M8 11.6v.2" /></svg>
+            Guide
+          </button>
           <label className="check">
             <input type="checkbox" checked={withSketch} onChange={(e) => setWithSketch(e.target.checked)} />
             Include example sketch
           </label>
-          <button type="button" className="btn primary" disabled={!exportable} onClick={downloadZip}>
+          <button type="button" className="btn primary" disabled={!exportable} onClick={downloadZip}
+            title={exportable ? `Download all files (${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'}+S)` : 'Add a GIF first'}>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.5 6.8L8 10.3l3.5-3.5M2.5 13.5h11" /></svg>
             Download all files (.zip)
           </button>
+          <ThemeSwitch />
         </div>
       </header>
 
@@ -322,6 +384,7 @@ export default function App() {
           selected={selected}
           onSelect={setSelected}
           onMove={move}
+          onReorder={reorder}
           onRemove={remove}
           panel={panel}
           indexOf={indexOf}
@@ -330,21 +393,44 @@ export default function App() {
       </nav>
 
       <main className="work">
-        <Stage
-          entry={selectedEntry}
-          panel={panel}
-          setPanel={setPanel}
-          onFrameMs={(ms) => selectedEntry && patch(selectedEntry.key, { frameMs: ms, frameMsTouched: true })}
-          onFraming={(box) => updateSettings({ manualBox: box }, box ? 30 : 0)}
-        />
-        <Settings
-          entry={selectedEntry}
-          update={(p) => selectedEntry && patch(selectedEntry.key, p)}
-          updateSettings={updateSettings}
-          taken={taken}
-          onRemove={() => selectedEntry && remove(selectedEntry.key)}
-        />
-        <CodePanel key={selected || 'none'} files={files} />
+        {/* On wide screens the viewer and the inspector scroll on their own,
+            so the preview stays put while you work through the settings. */}
+        <div className="viewer">
+          <Stage
+            entry={selectedEntry}
+            dragging={dragging}
+            panel={panel}
+            setPanel={setPanel}
+            onFrameMs={(ms) => selectedEntry && patch(selectedEntry.key, { frameMs: ms, frameMsTouched: true })}
+            onFraming={(box) => updateSettings({ manualBox: box }, box ? 30 : 0)}
+          />
+          {entries.length ? (
+            <CodePanel key={selected || 'none'} files={files} />
+          ) : (
+            <section className="start" aria-labelledby="start-title">
+              <h2 id="start-title">Put an animation on your display</h2>
+              <ol className="start-steps">
+                <li><strong>Add a GIF.</strong> Drop it anywhere on this page, or choose one. The display above shows it at its real 128×64 resolution.</li>
+                <li><strong>Tune it.</strong> Start from a preset, then adjust the threshold and framing until it reads clearly.</li>
+                <li><strong>Download.</strong> You get the animation headers and a ready-to-upload Arduino sketch.</li>
+              </ol>
+              <div className="start-actions">
+                <button type="button" className="btn primary" onClick={() => gifInput.current.click()}>Choose GIFs</button>
+                <button type="button" className="btn" onClick={addSample}>Try the sample animation</button>
+                <button type="button" className="btn ghost" onClick={() => setGuideOpen(true)}>How to wire the display</button>
+              </div>
+            </section>
+          )}
+        </div>
+        <div className="inspector">
+          <Settings
+            entry={selectedEntry}
+            update={(p) => selectedEntry && patch(selectedEntry.key, p)}
+            updateSettings={updateSettings}
+            taken={taken}
+            onRemove={() => selectedEntry && remove(selectedEntry.key)}
+          />
+        </div>
       </main>
 
       {dragging && (
@@ -352,6 +438,9 @@ export default function App() {
           <p>Drop GIFs to convert them, or .h files from your sketch to open them</p>
         </div>
       )}
+
+      <Guide open={guideOpen} onClose={() => setGuideOpen(false)} />
+      <Toasts toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }

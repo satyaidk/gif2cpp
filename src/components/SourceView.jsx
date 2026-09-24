@@ -157,7 +157,7 @@ export function SourceView({ entry, sourceIndex, box, locked, onBox, onReset }) 
         <image href={img.url} x="0" y="0" width={img.w} height={img.h} style={{ imageRendering: 'pixelated' }} />
         <path
           fillRule="evenodd"
-          fill="rgba(228,232,228,0.72)"
+          className="crop-dim"
           d={`M${vx} ${vy}h${vw}v${vh}h${-vw}z M${x0} ${y0}v${bh}h${bw}v${-bh}z`}
         />
         <rect

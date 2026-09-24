@@ -14,7 +14,7 @@ function Code({ text }) {
       {lines.map((l, i) => {
         const t = l.trimStart();
         const cls = t.startsWith('//') ? 'c-com' : t.startsWith('#') ? 'c-pre' : '';
-        return <span key={i} className={cls}>{l}{'\n'}</span>;
+        return <span key={i} className={`ln ${cls}`}>{l}{'\n'}</span>;
       })}
       {more > 0 && <span className="c-more">{`… ${more.toLocaleString()} more lines. Copy or download to get the whole file.`}</span>}
     </pre>
@@ -46,7 +46,7 @@ export function CodePanel({ files }) {
         )}
       </div>
       {file?.hint && <p className="code-hint">{file.hint}</p>}
-      {file?.text ? <Code text={file.text} /> : <p className="code-empty">{file?.empty}</p>}
+      {file?.text ? <Code key={file.name} text={file.text} /> : <p className="code-empty">{file?.empty}</p>}
     </section>
   );
 }

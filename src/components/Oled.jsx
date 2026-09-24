@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FRAME_BYTES, H, W } from '../lib/mochi.js';
 
 export const PANELS = {
@@ -50,18 +50,78 @@ export function textBits(lines) {
   return out;
 }
 
+// What each header pin connects to, shown when you point at a pin.
+const PINS = [
+  ['GND', 'Ground. Connect to GND on your board.'],
+  ['VCC', 'Power. Connect to 3.3V. Most modules also take 5V.'],
+  ['SCL', 'I2C clock. GPIO 22 on an ESP32, A5 on an Arduino Uno.'],
+  ['SDA', 'I2C data. GPIO 21 on an ESP32, A4 on an Arduino Uno.'],
+];
+
+const STATUS_TEXT = {
+  idle: 'Waiting for a GIF',
+  busy: 'Converting',
+  ok: 'Ready',
+  bad: 'Needs attention',
+};
+
+// The power-on sequence runs once per page load, the way a real SSD1306
+// shows random RAM contents for a moment and then fills in page by page.
+let booted = false;
+const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function noiseBits() {
+  const out = new Uint8Array(FRAME_BYTES);
+  crypto.getRandomValues(out);
+  return out;
+}
+
+/** Only the first `pages` 8-pixel rows of `bits` (one SSD1306 page each). */
+function firstPages(bits, frame, pages) {
+  const out = new Uint8Array(FRAME_BYTES);
+  if (bits) out.set(bits.subarray(frame * FRAME_BYTES, frame * FRAME_BYTES + pages * 8 * (W / 8)));
+  return out;
+}
+
 /**
  * pan: optional { start(), move(dxFrac, dyFrac), end(), zoom(factor, fx, fy) }
  * where fractions are of the screen size, so the picture can be dragged
  * and scroll-zoomed right on the display.
  */
-export function Oled({ bits, frame, panel, pan }) {
+export function Oled({ bits, frame, panel, pan, status = 'idle' }) {
   const ref = useRef(null);
   const glass = useRef(null);
   const drag = useRef(null);
   const panRef = useRef(pan);
   panRef.current = pan;
-  useEffect(() => drawBits(ref.current, bits, frame, panel), [bits, frame, panel]);
+  const [booting, setBooting] = useState(() => !booted && !reducedMotion());
+  const latest = useRef({ bits, frame, panel });
+  latest.current = { bits, frame, panel };
+
+  useEffect(() => {
+    if (!booting) return undefined;
+    booted = true;
+    const steps = [];
+    for (let i = 0; i < 5; i++) steps.push([() => noiseBits(), 0, 70]);
+    steps.push([() => null, 0, 160]);
+    for (let p = 1; p <= 8; p++) steps.push([(b, f) => firstPages(b, f, p), 0, 55]);
+    let k = 0;
+    let timer;
+    const run = () => {
+      if (k >= steps.length) { setBooting(false); return; }
+      const [make, , ms] = steps[k++];
+      const { bits: b, frame: f, panel: pl } = latest.current;
+      const img = make(b, f);
+      drawBits(ref.current, img, 0, pl);
+      timer = setTimeout(run, ms);
+    };
+    run();
+    return () => clearTimeout(timer);
+  }, [booting]);
+
+  useEffect(() => {
+    if (!booting) drawBits(ref.current, bits, frame, panel);
+  }, [bits, frame, panel, booting]);
 
   useEffect(() => {
     const el = glass.current;
@@ -94,10 +154,14 @@ export function Oled({ bits, frame, panel, pan }) {
     drag.current = null;
   };
   return (
-    <div className="module" role="img" aria-label="Preview on a 128 by 64 OLED display">
-      <div className="module-pins" aria-hidden="true">
-        {['GND', 'VCC', 'SCL', 'SDA'].map((p) => (
-          <span key={p} className="pin"><i />{p}</span>
+    <div className={`module ${booting ? 'booting' : ''}`}>
+      <div className="module-pins">
+        {PINS.map(([name, tip]) => (
+          <button key={name} type="button" className="pin" aria-label={`${name}: ${tip}`}>
+            <i aria-hidden="true" />
+            <span aria-hidden="true">{name}</span>
+            <span className="pin-tip" role="tooltip" aria-hidden="true">{tip}</span>
+          </button>
         ))}
       </div>
       <span className="hole tl" aria-hidden="true" />
@@ -113,8 +177,13 @@ export function Oled({ bits, frame, panel, pan }) {
         onPointerCancel={up}
         title={pan ? 'Drag to move the picture, scroll to zoom' : undefined}
       >
-        <canvas ref={ref} width={W} height={H} className={`screen panel-${panel}`} />
+        <canvas ref={ref} width={W} height={H} className={`screen panel-${panel}`}
+          role="img" aria-label="Preview on a 128 by 64 OLED display" />
         <div className="pixel-grid" aria-hidden="true" />
+      </div>
+      <div className={`led led-${status}`} title={STATUS_TEXT[status]}>
+        <i aria-hidden="true" />
+        <span aria-hidden="true">STAT</span>
       </div>
       <div className="module-silk" aria-hidden="true">SSD1306 128x64 I2C</div>
     </div>
