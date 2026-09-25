@@ -1,4 +1,6 @@
-# gif2cpp web
+# GIF 2 CPP
+
+<img width="256" height="128" alt="preview" src="https://github.com/user-attachments/assets/249ffae1-ae07-4488-94f3-85b41f887f4d" />
 
 A React app that converts GIFs into compressed C++ animation headers for 128×64
 SSD1306 OLED displays. It is a browser port of `reference/gif2cpp.py`. With
